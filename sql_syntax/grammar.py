@@ -34,14 +34,15 @@ def p_empty(p):
     pass
 
 def p_select_query(p):
-    '''select_query : SELECT fields_part FROM from_part where_part'''
+    '''select_query : SELECT fields_part FROM from_part WHERE where_list
+                    | SELECT fields_part FROM from_part'''
     res = {
         'type': 'SELECT',
         'fields': p[2],
         'from': p[4],
         }
-    if len(p) == 6:
-        res['where'] = p[5]
+    if len(p) == 7:
+        res['where'] = p[6]
     p[0] = res
 
 def p_fields_part(p):
@@ -98,18 +99,6 @@ def p_from_part(p):
         res['alias'] = p[2]
         p[0] = res
         return
-
-
-def p_where_part(p):
-    '''where_part : WHERE where_list
-                  | empty'''
-    if len(p) == 3:
-        res = {
-            'type': 'WHERE',
-            'value': p[2],
-        }
-        p[0] = res
-
 
 #на порядок and/or правил - забиваем (временно?)
 def p_where_list(p):
@@ -180,7 +169,9 @@ def p_where_and_field_item(p):
     '''where_and_field_item : NUMBER
                             | NAME
                             | NAME "." NAME
-                            | "(" select_query ")" '''
+                            | "(" select_query ")"
+                            | STRING
+                            | DQ_STRING'''
     res = {
         'type': 'WHERE_AND_FIELD_ITEM',
     }
