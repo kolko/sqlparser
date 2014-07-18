@@ -1,19 +1,5 @@
 from . import lexis
 
-# select z.a from b as z where b=z.c
-#
-# exp : select fields from name alias where
-# select : SELECT
-# fields : field | fields comma field
-# field : name | name DOT name
-# comma : ,
-# DOT : .
-# from : FROM
-# name : ID
-# alias : as name | empty
-# as : AS
-# where : WHERE clouse | empty
-
 tokens = lexis.tokens
 
 # precedence = (
@@ -86,7 +72,8 @@ def p_field_record(p):
 
 def p_from_part(p):
     '''from_part : NAME
-                 | NAME NAME'''
+                 | NAME NAME
+                 | NAME AS NAME'''
     res = {
         'type': 'FROM_PART',
     }
@@ -97,6 +84,11 @@ def p_from_part(p):
     if len(p) == 3:
         res['value'] = p[1]
         res['alias'] = p[2]
+        p[0] = res
+        return
+    if len(p) == 4 and p[2] == 'as':
+        res['value'] = p[1]
+        res['alias'] = p[3]
         p[0] = res
         return
 

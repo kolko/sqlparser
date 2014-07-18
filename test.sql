@@ -20,3 +20,5 @@ select * from users where id=1 or id=2 or id=3;
 select * from users where (name=1 or (surname=2 and last_name=3) or name = 4) and id < 3;
 select * from users where name = 'Test user name';
 select "from" from users;
+select * from users where name = 'Aprill O\'neel';
+select z.a from b as z where b=z.c;
