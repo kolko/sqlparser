@@ -19,17 +19,45 @@ def p_empty(p):
     'empty : '
     pass
 
-def p_select_query(p):
-    '''select_query : SELECT fields_part FROM from_part WHERE where_list
-                    | SELECT fields_part FROM from_part'''
-    res = {
+def p_select_query1(p):
+    '''select_query : SELECT fields_part FROM from_part WHERE where_list'''
+    p[0] = {
         'type': 'SELECT',
         'fields': p[2],
         'from': p[4],
-        }
-    if len(p) == 7:
-        res['where'] = p[6]
-    p[0] = res
+        'where': p[6],
+    }
+
+def p_select_query2(p):
+    '''select_query : SELECT fields_part FROM from_part'''
+    p[0] = {
+        'type': 'SELECT',
+        'fields': p[2],
+        'from': p[4],
+    }
+
+def p_select_query3(p):
+    '''select_query : SELECT FIRST NUMBER fields_part FROM from_part WHERE where_list
+                    | SELECT LAST NUMBER fields_part FROM from_part WHERE where_list'''
+    p[0] = {
+        'type': 'SELECT',
+        'limit_type': p[2].lower(),
+        'limit': p[3],
+        'fields': p[4],
+        'from': p[6],
+        'where': p[8],
+    }
+
+def p_select_query4(p):
+    '''select_query : SELECT FIRST NUMBER fields_part FROM from_part
+                    | SELECT LAST NUMBER fields_part FROM from_part'''
+    p[0] = {
+        'type': 'SELECT',
+        'limit_type': p[2].lower(),
+        'limit': p[3],
+        'fields': p[4],
+        'from': p[6],
+    }
 
 def p_fields_part(p):
     '''fields_part : field_record
@@ -86,7 +114,7 @@ def p_from_part(p):
         res['alias'] = p[2]
         p[0] = res
         return
-    if len(p) == 4 and p[2] == 'as':
+    if len(p) == 4 and p[2].lower() == 'as':
         res['value'] = p[1]
         res['alias'] = p[3]
         p[0] = res
@@ -110,7 +138,7 @@ def p_where_list(p):
         return
     res = {
     }
-    if len(p) == 4 and (p[2] == 'and' or p[2] == 'or'):
+    if len(p) == 4 and (p[2].lower() == 'and' or p[2].lower() == 'or'):
         res = {
             'type': 'WHERE_EXPRESSION',
             'exp_type': p[2],
@@ -118,7 +146,7 @@ def p_where_list(p):
         }
         if 'type' in p[3] and p[3]['type'] == 'WHERE_EXPRESSION':
             #пытаемся объеденить последовательность and .. and ... and
-            if p[3]['exp_type'] == p[2]:
+            if p[3]['exp_type'].lower() == p[2].lower():
                 res = {
                     'type': 'WHERE_EXPRESSION',
                     'exp_type': p[2],

@@ -7,7 +7,9 @@ reserved = {
     'where': 'WHERE',
     'and': 'AND',
     'or': 'OR',
-    'is': 'IS'
+    'is': 'IS',
+    'first': 'FIRST',
+    'last': 'LAST',
 }
 
 t_COMPARE_TYPE = r'\!=|==|>|<|>=|<=|='

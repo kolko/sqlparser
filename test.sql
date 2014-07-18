@@ -22,3 +22,6 @@ select * from users where name = 'Test user name';
 select "from" from users;
 select * from users where name = 'Aprill O\'neel';
 select z.a from b as z where b=z.c;
+SeLeCt * FrOm UsErS As u;
+select first 10 id from users;
+select last 20 id from users;
