@@ -2,10 +2,12 @@ from . import lexis
 
 tokens = lexis.tokens
 
-# precedence = (
+precedence = (
 #     ('right', '='),
 #     ('right', 'QUANTIFIER'),
-# )
+    ('left', 'PLUS', 'MINUS'),
+    ('left', '*', 'DIVIDE'),
+)
 
 def p_log(p):
     '''log : select_query END_QUERY
@@ -166,7 +168,8 @@ def p_where_list(p):
 
 def p_where_object(p):
     '''where_object : where_compare_item COMPARE_TYPE where_compare_item
-                    | where_compare_item IS where_compare_item'''
+                    | where_compare_item IS where_compare_item
+                    | where_compare_item IN where_compare_item'''
     res = {
         'compare_list' : [p[1], p[3]],
         'compare_type': p[2],
@@ -176,14 +179,9 @@ def p_where_object(p):
 def p_where_compare_item(p):
     '''where_compare_item : where_and_field_item
     '''
-    res = {
-        'type': 'WHERE_COMPARE_ITEM',
-    }
-    if len(p) == 2 and 'type' in p[1] and p[1]['type'] == 'WHERE_AND_FIELD_ITEM':
-        res = p[1]
-        res['type'] = 'WHERE_COMPARE_ITEM'
-        p[0] = res
-        return
+    res = p[1]
+    res['type'] = 'WHERE_COMPARE_ITEM'
+    p[0] = res
 
 def p_where_and_field_item(p):
     '''where_and_field_item : NUMBER
@@ -208,3 +206,46 @@ def p_where_and_field_item(p):
         res['from_alias'] = p[1]
         p[0] = res
         return
+
+def p_where_and_field_item2_functions(p):
+    '''where_and_field_item : NAME "(" where_and_field_item_list ")"
+                            | NAME "(" "*" ")"
+                            | NAME "(" ")"'''
+    p[0] = {
+        'type': 'function',
+        'function': p[1],
+    }
+    if len(p) > 4:
+        p[0]['args'] = p[3]
+
+def p_arithmetic_expression(p): # трабла с порядком вычислений - забиваем
+    '''
+    where_and_field_item : where_and_field_item PLUS where_and_field_item
+                         | where_and_field_item MINUS where_and_field_item
+                         | where_and_field_item "*" where_and_field_item
+                         | where_and_field_item DIVIDE where_and_field_item
+    '''
+    p[0] = {
+        'type': 'arichmetic',
+        'args': [p[1], p[3]],
+        'sign': p[2],
+    }
+
+
+def p_where_and_field_item4(p):
+    '''where_and_field_item : "(" where_and_field_item_list ")" '''
+    if len(p[2]) == 1:
+        p[0] = p[2][0]
+    else:
+        p[0] = {
+            'type': 'item_list',
+            'value': p[2],
+        }
+
+def p_where_and_field_item_list(p):
+    '''where_and_field_item_list : where_and_field_item COMMA where_and_field_item_list
+                                 | where_and_field_item'''
+    if len(p) == 4:
+        p[0] = [p[1]] + p[3]
+    else:
+        p[0] = [p[1]]

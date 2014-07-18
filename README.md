@@ -8,3 +8,7 @@ and Firebird and you may think what this parser based on they).
 
 Todo:
 -Use database scheme to define aligment fields to tables.
+-joins
+-group by/having
+-dates, float, between, etc... :(
+-maybe: substrings (firebird 2.1 form)

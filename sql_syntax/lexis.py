@@ -10,9 +10,10 @@ reserved = {
     'is': 'IS',
     'first': 'FIRST',
     'last': 'LAST',
+    'in': 'IN',
 }
 
-t_COMPARE_TYPE = r'\!=|==|>|<|>=|<=|='
+t_COMPARE_TYPE = r'<>|\!=|==|>|<|>=|<=|='
 
 def t_NAME(t):
     r'[_a-zA-Z][a-zA-Z_0-9]*'
@@ -21,7 +22,7 @@ def t_NAME(t):
     return t
 
 def t_NUMBER(t):
-    r'\d+'
+    r'-?\d+'
     t.value = int(t.value)
     return t
 
@@ -40,10 +41,15 @@ def t_DQ_STRING(t): #строка в двойных кавычках - имен�
     t.value = t.value[1:-1]
     return t
 
+t_PLUS = r'\+'
+t_MINUS = r'-'
+t_DIVIDE = r'/'
+
 tokens = (
     'COMPARE_TYPE',
     'NAME', 'NUMBER',
     'END_QUERY', 'COMMA', 'STRING', 'DQ_STRING',
+    'PLUS', 'MINUS', 'DIVIDE',
 ) + tuple(set(reserved.values()))
 
 literals = '(){}@%.,*'

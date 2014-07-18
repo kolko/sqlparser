@@ -25,3 +25,31 @@ select z.a from b as z where b=z.c;
 SeLeCt * FrOm UsErS As u;
 select first 10 id from users;
 select last 20 id from users;
+select (id) from users;
+select (id, name) from users; --Don't know this is correct
+select first 30 *
+from abonents
+where modified in (1,2,3);
+select * from users where COALESCE(deleted, 0)=0;
+select sum(balance) from users;
+select count(*) from users;
+select first 1 random() from users;
+select debit - credit from users;
+select (debit - credit + ostatok) as balance from users;
+select first 1 1 - 2 / 3 from users; -- трабла с порядком вычислений - забиваем
+select * from users where id <> 1 and id != 2;
+select u.*
+from USERS_USLUGA uu
+--left join USLUGA u on uu.usluga_id=u.id
+where uu.abonent_id = 1 and uu.activated=1 and u.system_type=9 and COALESCE(UU.DELETED, 0) != 1;
+select first 2 U.ID,
+U.ABONENT_ID,
+ABON.ACCOUNT_ID,
+U.OVER_LIMIT_DATE,
+U.MODIFIED,
+abon.MODIFIED as abonent_modified
+from USERS U
+-- left join ABONENTS ABON on U.ABONENT_ID = ABON.ID
+where ((U.IP = '127.0.0.1' or U.IP is null) and(u.id=1 or 1 is null or 1 = -1))
+and (abon.deleted=0 or abon.deleted is null)
+and U.IS_TEMPLATE <> 1;
