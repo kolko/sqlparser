@@ -53,3 +53,11 @@ from USERS U
 where ((U.IP = '127.0.0.1' or U.IP is null) and(u.id=1 or 1 is null or 1 = -1))
 and (abon.deleted=0 or abon.deleted is null)
 and U.IS_TEMPLATE <> 1;
+select * from actor limit 10 OFFSET 20;
+select * from users where id in (1,2,3,4) LIMIT 2;
+select * from users where id between 19 and random();
+select actor_id between 19 and 19 from actor where actor_id between 19 and random();
+select * from staff join actor ON actor.actor_id BETWEEN 10 and 20; -- sqlite valid :O
+select * from users join abonents join attributes join u_attributes join a_attributes;
+select * from users left join abonents ON abonents.id = users.abonent_id;
+select * from users u left join abonents ON a.id = u.abonent_id;

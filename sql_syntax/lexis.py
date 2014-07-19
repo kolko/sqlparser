@@ -11,6 +11,15 @@ reserved = {
     'first': 'FIRST',
     'last': 'LAST',
     'in': 'IN',
+    'limit': 'LIMIT',
+    'offset': 'OFFSET',
+    'between': 'BETWEEN',
+    'on': 'ON',
+    'join': 'JOIN',
+    'left': 'LEFT',
+    'right': 'RIGHT',
+    'outer': 'OUTER',
+    'full': 'FULL',
 }
 
 t_COMPARE_TYPE = r'<>|\!=|==|>|<|>=|<=|='

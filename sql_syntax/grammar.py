@@ -17,9 +17,9 @@ def p_log(p):
     else:
         p[0] = [p[1]] + p[3]
 
-def p_empty(p):
-    'empty : '
-    pass
+# def p_empty(p):
+#     'empty : '
+#     pass
 
 def p_select_query1(p):
     '''select_query : SELECT fields_part FROM from_part WHERE where_list'''
@@ -61,6 +61,31 @@ def p_select_query4(p):
         'from': p[6],
     }
 
+def p_select_query5(p):
+    '''select_query : SELECT fields_part FROM from_part WHERE where_list LIMIT NUMBER
+                    | SELECT fields_part FROM from_part WHERE where_list LIMIT NUMBER OFFSET NUMBER'''
+    p[0] = {
+        'type': 'SELECT',
+        'fields': p[2],
+        'from': p[4],
+        'where': p[6],
+        'limit': p[8],
+    }
+    if len(p) == 11:
+        p[0]['offset'] = p[10]
+
+def p_select_query6(p):
+    '''select_query : SELECT fields_part FROM from_part LIMIT NUMBER
+                    | SELECT fields_part FROM from_part LIMIT NUMBER OFFSET NUMBER'''
+    p[0] = {
+        'type': 'SELECT',
+        'fields': p[2],
+        'from': p[4],
+        'limit': p[6],
+    }
+    if len(p) == 9:
+        p[0]['offset'] = p[8]
+
 def p_fields_part(p):
     '''fields_part : field_record
                    | field_record COMMA fields_part'''
@@ -74,7 +99,9 @@ def p_field_record(p):
                     | where_and_field_item AS NAME
                     | "*"
                     | NAME "." "*"
+                    | where_object
     '''
+    # where_object тут до первого рефакторинга
     res = {
         'type': 'FIELD',
     }
@@ -101,26 +128,96 @@ def p_field_record(p):
         return
 
 def p_from_part(p):
-    '''from_part : NAME
-                 | NAME NAME
-                 | NAME AS NAME'''
-    res = {
-        'type': 'FROM_PART',
+    '''from_part : from_object'''
+    p[0] = p[1]
+
+def p_from_part2(p):
+    '''from_part : from_object join_part'''
+    join_part = p[2]
+    if join_part['more_join']:
+        more_join = join_part['more_join']
+        join_part['more_join'] = None
+        join_part = [join_part] + more_join
+    else:
+        join_part = [join_part]
+    p[0] = {
+        'value': p[1],
+        'joins': join_part,
     }
-    if len(p) == 2:
-        res['value'] = p[1]
-        p[0] = res
-        return
+
+def p_join_part(p):
+    '''join_part : join from_object
+                 | join from_object join_part'''
+    p[0] = {
+        'type': 'join',
+        'join_type': p[1],
+        'value': p[2],
+        'more_join': None,
+    }
+    if len(p) == 4:
+        if p[3]['more_join']:
+            more_join = p[3]['more_join']
+            p[3]['more_join'] = None
+            p[0]['more_join'] = [p[3]] + more_join
+        else:
+            p[0]['more_join'] = [p[3]]
+
+def p_join_part_on(p):
+    '''join_part : join from_object ON where_list
+                 | join from_object ON where_list join_part'''
+    p[0] = {
+        'type': 'join',
+        'join_type': p[1],
+        'value': p[2],
+        'on': p[4],
+        'more_join': None,
+    }
+    if len(p) == 6:
+        if p[5]['more_join']:
+            more_join = p[5]['more_join']
+            p[5]['more_join'] = None
+            p[0]['more_join'] = [p[5]] + more_join
+        else:
+            p[0]['more_join'] = [p[5]]
+
+
+
+def p_join(p):
+    '''join : JOIN
+            | RIGHT JOIN
+            | LEFT JOIN
+            | FULL JOIN
+            | LEFT OUTER JOIN
+            | RIGHT OUTER JOIN'''
+    p[0] = p[1]
+    if len(p) == 3:
+        p[0] = '%s %s' % (p[1], p[2])
+    if len(p) == 4:
+        p[0] = '%s %s %s' % (p[1], p[2], p[3])
+
+def p_from_object(p):
+    '''from_object : NAME'''
+    p[0] = {
+        'type': 'from_object',
+        'value': p[1],
+    }
+
+def p_from_object2(p):
+    '''from_object : NAME NAME
+                   | NAME AS NAME'''
+    res = {
+        'type': 'from_object',
+    }
     if len(p) == 3:
         res['value'] = p[1]
         res['alias'] = p[2]
         p[0] = res
-        return
-    if len(p) == 4 and p[2].lower() == 'as':
+    else:
         res['value'] = p[1]
         res['alias'] = p[3]
         p[0] = res
-        return
+
+
 
 #на порядок and/or правил - забиваем (временно?)
 def p_where_list(p):
@@ -169,7 +266,8 @@ def p_where_list(p):
 def p_where_object(p):
     '''where_object : where_compare_item COMPARE_TYPE where_compare_item
                     | where_compare_item IS where_compare_item
-                    | where_compare_item IN where_compare_item'''
+                    | where_compare_item IN where_compare_item
+                    | where_compare_item BETWEEN between_compare_item'''
     res = {
         'compare_list' : [p[1], p[3]],
         'compare_type': p[2],
@@ -241,6 +339,13 @@ def p_where_and_field_item4(p):
             'type': 'item_list',
             'value': p[2],
         }
+
+def p_between_compare_item(p):
+    '''between_compare_item : where_and_field_item AND where_and_field_item '''
+    p[0] = {
+        'type': 'between',
+        'value': [p[1], p[3]],
+    }
 
 def p_where_and_field_item_list(p):
     '''where_and_field_item_list : where_and_field_item COMMA where_and_field_item_list
