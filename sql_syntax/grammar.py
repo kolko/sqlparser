@@ -155,6 +155,7 @@ def p_from_part2(p):
     p[0] = {
         'value': p[1],
         'joins': join_part,
+        'type': 'from_object',
     }
 
 def p_join_part(p):
@@ -280,6 +281,7 @@ def p_where_object(p):
                     | where_compare_item IN where_compare_item
                     | where_compare_item BETWEEN between_compare_item'''
     res = {
+        'type': 'compare',
         'compare_list': [p[1], p[3]],
         'compare_type': p[2],
     }
@@ -292,17 +294,30 @@ def p_where_compare_item(p):
     # res['type'] = 'WHERE_COMPARE_ITEM'
     p[0] = res
 
+def p_where_and_field_item_number(p):
+    '''where_and_field_item : NUMBER'''
+    p[0] = {
+        'type': 'number',
+        'value': p[1],
+    }
+
+def p_where_and_field_item_string(p):
+    '''where_and_field_item : STRING'''
+    p[0] = {
+        'type': 'string',
+        'value': p[1],
+    }
+
 def p_where_and_field_item(p):
-    '''where_and_field_item : NUMBER
-                            | NAME
+    '''where_and_field_item : NAME
                             | NAME "." NAME
                             | "(" select_query ")"
-                            | STRING
                             | DQ_STRING
                             | LIMIT
                             | NAME "." LIMIT
                             | LIMIT "." NAME
-                            | LIMIT "." LIMIT''' # dirty bugfix of LIMIT field - TODO: delete limit from lexer?
+                            | LIMIT "." LIMIT'''
+    # dirty bugfix of LIMIT field - TODO: delete limit from lexer?
     res = {
         'type': 'WHERE_AND_FIELD_ITEM',
     }
