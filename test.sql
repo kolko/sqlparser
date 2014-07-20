@@ -40,7 +40,6 @@ select first 1 1 - 2 / 3 from users; -- трабла с порядком выч�
 select * from users where id <> 1 and id != 2;
 select u.*
 from USERS_USLUGA uu
---left join USLUGA u on uu.usluga_id=u.id
 where uu.abonent_id = 1 and uu.activated=1 and u.system_type=9 and COALESCE(UU.DELETED, 0) != 1;
 select first 2 U.ID,
 U.ABONENT_ID,
@@ -49,7 +48,6 @@ U.OVER_LIMIT_DATE,
 U.MODIFIED,
 abon.MODIFIED as abonent_modified
 from USERS U
--- left join ABONENTS ABON on U.ABONENT_ID = ABON.ID
 where ((U.IP = '127.0.0.1' or U.IP is null) and(u.id=1 or 1 is null or 1 = -1))
 and (abon.deleted=0 or abon.deleted is null)
 and U.IS_TEMPLATE <> 1;
@@ -61,3 +59,13 @@ select * from staff join actor ON actor.actor_id BETWEEN 10 and 20; -- sqlite va
 select * from users join abonents join attributes join u_attributes join a_attributes;
 select * from users left join abonents ON abonents.id = users.abonent_id;
 select * from users u left join abonents ON a.id = u.abonent_id;
+SELECT B.* FROM ABONENTS_BLOCK B WHERE B.ABONENT_ID=94 AND (B.USLUGA_ID=null OR null IS NULL) AND (B.USERS_USLUGA_ID=null OR null IS NULL);
+SELECT DISTINCT ACT_ID FROM COUNTERS        WHERE ABONENT_ID=97 AND CLOSED=1 AND MONTH_NUMBER=3 AND YEAR_NUMBER=2013;
+SELECT 1 FROM USERS_USLUGA WHERE NEXT_DATE<=CURRENT_TIMESTAMP;
+select  first_name, last_name from actor where not actor_id > 10 and actor_id > 7; -- not влияет только на 1 кусок
+select * from users where name is not null;
+--LIMIT problem: (this is valid for firebird) TODO
+SELECT  A.*, AA.LIMIT, AA.UNLIMITED FROM ABONENTS A LEFT JOIN ADMIN_ACCOUNTS AA ON A.ACCOUNT_ID=AA.ID WHERE A.ID=97;
+--valid! (check on SQLite)
+select not null from actor;
+select * from users where name is not null;

@@ -17,28 +17,30 @@ def p_log(p):
     else:
         p[0] = [p[1]] + p[3]
 
-# def p_empty(p):
-#     'empty : '
-#     pass
+def p_empty(p):
+    'empty : '
+    pass
 
 def p_select_query1(p):
-    '''select_query : SELECT fields_part FROM from_part WHERE where_list'''
+    '''select_query : SELECT distinct fields_part FROM from_part WHERE where_list'''
     p[0] = {
         'type': 'SELECT',
-        'fields': p[2],
-        'from': p[4],
-        'where': p[6],
+        'distinct': p[2],
+        'fields': p[3],
+        'from': p[5],
+        'where': p[7],
     }
 
 def p_select_query2(p):
-    '''select_query : SELECT fields_part FROM from_part'''
+    '''select_query : SELECT distinct fields_part FROM from_part'''
     p[0] = {
         'type': 'SELECT',
-        'fields': p[2],
-        'from': p[4],
+        'distinct': p[2],
+        'fields': p[3],
+        'from': p[5],
     }
 
-def p_select_query3(p):
+def p_select_query3(p): #TODO: distinct
     '''select_query : SELECT FIRST NUMBER fields_part FROM from_part WHERE where_list
                     | SELECT LAST NUMBER fields_part FROM from_part WHERE where_list'''
     p[0] = {
@@ -50,7 +52,7 @@ def p_select_query3(p):
         'where': p[8],
     }
 
-def p_select_query4(p):
+def p_select_query4(p): #TODO: distinct
     '''select_query : SELECT FIRST NUMBER fields_part FROM from_part
                     | SELECT LAST NUMBER fields_part FROM from_part'''
     p[0] = {
@@ -62,29 +64,39 @@ def p_select_query4(p):
     }
 
 def p_select_query5(p):
-    '''select_query : SELECT fields_part FROM from_part WHERE where_list LIMIT NUMBER
-                    | SELECT fields_part FROM from_part WHERE where_list LIMIT NUMBER OFFSET NUMBER'''
+    '''select_query : SELECT distinct fields_part FROM from_part WHERE where_list LIMIT NUMBER
+                    | SELECT distinct fields_part FROM from_part WHERE where_list LIMIT NUMBER OFFSET NUMBER'''
     p[0] = {
         'type': 'SELECT',
-        'fields': p[2],
-        'from': p[4],
-        'where': p[6],
-        'limit': p[8],
+        'distinct': p[2],
+        'fields': p[3],
+        'from': p[5],
+        'where': p[7],
+        'limit': p[9],
     }
-    if len(p) == 11:
-        p[0]['offset'] = p[10]
+    if len(p) == 12:
+        p[0]['offset'] = p[11]
 
 def p_select_query6(p):
-    '''select_query : SELECT fields_part FROM from_part LIMIT NUMBER
-                    | SELECT fields_part FROM from_part LIMIT NUMBER OFFSET NUMBER'''
+    '''select_query : SELECT distinct fields_part FROM from_part LIMIT NUMBER
+                    | SELECT distinct fields_part FROM from_part LIMIT NUMBER OFFSET NUMBER'''
     p[0] = {
         'type': 'SELECT',
-        'fields': p[2],
-        'from': p[4],
-        'limit': p[6],
+        'distinct': p[2],
+        'fields': p[3],
+        'from': p[5],
+        'limit': p[7],
     }
-    if len(p) == 9:
-        p[0]['offset'] = p[8]
+    if len(p) == 10:
+        p[0]['offset'] = p[9]
+
+def p_distinct(p):
+    '''distinct : DISTINCT
+                | empty'''
+    if p[1]:
+        p[0] = True
+    else:
+        p[0] = False
 
 def p_fields_part(p):
     '''fields_part : field_record
@@ -235,12 +247,10 @@ def p_where_list(p):
         #скобки без выражений - просто возвращаем содержимое
         p[0] = p[2]
         return
-    res = {
-    }
     if len(p) == 4 and (p[2].lower() == 'and' or p[2].lower() == 'or'):
         res = {
             'type': 'WHERE_EXPRESSION',
-            'exp_type': p[2],
+            'exp_type': p[2].lower(),
             'values': [p[1], p[3]]
         }
         if 'type' in p[3] and p[3]['type'] == 'WHERE_EXPRESSION':
@@ -248,19 +258,20 @@ def p_where_list(p):
             if p[3]['exp_type'].lower() == p[2].lower():
                 res = {
                     'type': 'WHERE_EXPRESSION',
-                    'exp_type': p[2],
+                    'exp_type': p[2].lower(),
                     'values': [p[1]] + p[3]['values'],
                 }
         p[0] = res
         return
-    if len(p) == 6 and p[1] == '(' and (p[4] == 'and' or p[4] == 'or'):
+    if len(p) == 6 and p[1] == '(' and (p[4].lower() == 'and' or p[4].lower() == 'or'):
         res = {
             'type': 'WHERE_EXPRESSION',
-            'exp_type': p[4],
+            'exp_type': p[4].lower(),
             'values': [p[2], p[5]]
         }
         p[0] = res
         return
+    raise Exception('FAIL')
 
 
 def p_where_object(p):
@@ -269,7 +280,7 @@ def p_where_object(p):
                     | where_compare_item IN where_compare_item
                     | where_compare_item BETWEEN between_compare_item'''
     res = {
-        'compare_list' : [p[1], p[3]],
+        'compare_list': [p[1], p[3]],
         'compare_type': p[2],
     }
     p[0] = res
@@ -278,7 +289,7 @@ def p_where_compare_item(p):
     '''where_compare_item : where_and_field_item
     '''
     res = p[1]
-    res['type'] = 'WHERE_COMPARE_ITEM'
+    # res['type'] = 'WHERE_COMPARE_ITEM'
     p[0] = res
 
 def p_where_and_field_item(p):
@@ -287,7 +298,11 @@ def p_where_and_field_item(p):
                             | NAME "." NAME
                             | "(" select_query ")"
                             | STRING
-                            | DQ_STRING'''
+                            | DQ_STRING
+                            | LIMIT
+                            | NAME "." LIMIT
+                            | LIMIT "." NAME
+                            | LIMIT "." LIMIT''' # dirty bugfix of LIMIT field - TODO: delete limit from lexer?
     res = {
         'type': 'WHERE_AND_FIELD_ITEM',
     }
@@ -304,6 +319,7 @@ def p_where_and_field_item(p):
         res['from_alias'] = p[1]
         p[0] = res
         return
+    raise Exception('FAIL')
 
 def p_where_and_field_item2_functions(p):
     '''where_and_field_item : NAME "(" where_and_field_item_list ")"
@@ -339,6 +355,19 @@ def p_where_and_field_item4(p):
             'type': 'item_list',
             'value': p[2],
         }
+
+def p_where_and_field_item5_null(p):
+    '''where_and_field_item : NULL'''
+    p[0] = {
+        'type': 'null'
+    }
+
+def p_where_and_field_item6_not(p):
+    '''where_and_field_item : NOT where_and_field_item'''
+    p[0] = {
+        'type': 'not',
+        'value': p[2],
+    }
 
 def p_between_compare_item(p):
     '''between_compare_item : where_and_field_item AND where_and_field_item '''

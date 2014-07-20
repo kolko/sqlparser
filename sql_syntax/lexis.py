@@ -1,8 +1,10 @@
+import decimal
+
 reserved = {
     'from': 'FROM',
     'select': 'SELECT',
-    'insert': 'INSERT',
-    'update': 'UPDATE',
+    # 'insert': 'INSERT',
+    # 'update': 'UPDATE',
     'as': 'AS',
     'where': 'WHERE',
     'and': 'AND',
@@ -20,9 +22,12 @@ reserved = {
     'right': 'RIGHT',
     'outer': 'OUTER',
     'full': 'FULL',
+    'distinct': 'DISTINCT',
+    'not': 'NOT',
+    'null': 'NULL',
 }
 
-t_COMPARE_TYPE = r'<>|\!=|==|>|<|>=|<=|='
+t_COMPARE_TYPE = r'<>|\!=|==|>=|<=|=>|=<|=|>|<'
 
 def t_NAME(t):
     r'[_a-zA-Z][a-zA-Z_0-9]*'
@@ -30,10 +35,20 @@ def t_NAME(t):
     t.type = reserved.get(t.value.lower(), 'NAME')
     return t
 
+# def t_NUMBER(t):
+#     r'-?\d+'
+#     t.value = int(t.value)
+#     return t
+
+#in SQLite, for example, NUMBER == all numbers:
+#select  first_name, last_name from actor limit 20.00002; - is valid!
+#so, i can put float in number
+
 def t_NUMBER(t):
-    r'-?\d+'
-    t.value = int(t.value)
+    r"""-?(\d+(\.\d*)?|\.\d+)([eE][-+]? \d+)?"""
+    t.value = int(decimal.Decimal(t.value))
     return t
+
 
 t_END_QUERY = r';'
 t_COMMA = r','

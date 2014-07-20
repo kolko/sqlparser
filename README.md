@@ -7,8 +7,8 @@ Parser has not based on any SQL dialect (i use PostgreSQL
 and Firebird and you may think what this parser based on they).
 
 Todo:
--Use database scheme to define aligment fields to tables.
+-Use database scheme to define aligment fields to tables. (in another project :) )
 -group by/having
 -order by
--dates, float, etc... :(
+-cast(blah as blah), exists(SELECT)
 -maybe: substrings (firebird 2.1 form)
