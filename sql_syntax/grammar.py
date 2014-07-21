@@ -21,70 +21,37 @@ def p_empty(p):
     'empty : '
     pass
 
-def p_select_query1(p):
-    '''select_query : SELECT distinct fields_part FROM from_part WHERE where_list'''
+def p_select_query(p):
+    '''select_query : SELECT distinct fields_part from where'''
     p[0] = {
         'type': 'SELECT',
         'distinct': p[2],
         'fields': p[3],
-        'from': p[5],
-        'where': p[7],
+        'from': p[4],
+        'where': p[5],
     }
 
-def p_select_query2(p):
-    '''select_query : SELECT distinct fields_part FROM from_part'''
-    p[0] = {
-        'type': 'SELECT',
-        'distinct': p[2],
-        'fields': p[3],
-        'from': p[5],
-    }
-
-def p_select_query3(p): #TODO: distinct
-    '''select_query : SELECT FIRST NUMBER fields_part FROM from_part WHERE where_list
-                    | SELECT LAST NUMBER fields_part FROM from_part WHERE where_list'''
+def p_select_query2(p): #TODO: distinct
+    '''select_query : SELECT FIRST NUMBER fields_part from where
+                    | SELECT LAST NUMBER fields_part from where'''
     p[0] = {
         'type': 'SELECT',
         'limit_type': p[2].lower(),
         'limit': p[3],
         'fields': p[4],
-        'from': p[6],
-        'where': p[8],
+        'from': p[5],
+        'where': p[6],
     }
 
-def p_select_query4(p): #TODO: distinct
-    '''select_query : SELECT FIRST NUMBER fields_part FROM from_part
-                    | SELECT LAST NUMBER fields_part FROM from_part'''
-    p[0] = {
-        'type': 'SELECT',
-        'limit_type': p[2].lower(),
-        'limit': p[3],
-        'fields': p[4],
-        'from': p[6],
-    }
-
-def p_select_query5(p):
-    '''select_query : SELECT distinct fields_part FROM from_part WHERE where_list LIMIT NUMBER
-                    | SELECT distinct fields_part FROM from_part WHERE where_list LIMIT NUMBER OFFSET NUMBER'''
+def p_select_query3(p):
+    '''select_query : SELECT distinct fields_part from where LIMIT NUMBER
+                    | SELECT distinct fields_part from where LIMIT NUMBER OFFSET NUMBER'''
     p[0] = {
         'type': 'SELECT',
         'distinct': p[2],
         'fields': p[3],
-        'from': p[5],
-        'where': p[7],
-        'limit': p[9],
-    }
-    if len(p) == 12:
-        p[0]['offset'] = p[11]
-
-def p_select_query6(p):
-    '''select_query : SELECT distinct fields_part FROM from_part LIMIT NUMBER
-                    | SELECT distinct fields_part FROM from_part LIMIT NUMBER OFFSET NUMBER'''
-    p[0] = {
-        'type': 'SELECT',
-        'distinct': p[2],
-        'fields': p[3],
-        'from': p[5],
+        'from': p[4],
+        'where': p[5],
         'limit': p[7],
     }
     if len(p) == 10:
@@ -92,11 +59,15 @@ def p_select_query6(p):
 
 def p_distinct(p):
     '''distinct : DISTINCT
+                | ALL
                 | empty'''
     if p[1]:
-        p[0] = True
+        p[0] = {
+            'type': 'distinct',
+            'value': p[1],
+        }
     else:
-        p[0] = False
+        p[0] = None
 
 def p_fields_part(p):
     '''fields_part : field_record
@@ -139,12 +110,20 @@ def p_field_record(p):
         p[0] = res
         return
 
-def p_from_part(p):
-    '''from_part : from_object'''
-    p[0] = p[1]
+def p_from(p):
+    '''from : FROM from_list'''
+    p[0] = p[2]
 
-def p_from_part2(p):
-    '''from_part : from_object join_part'''
+def p_from2(p):
+    '''from : empty'''
+    p[0] = None
+
+def p_from_list(p):
+    '''from_list : from_object'''
+    p[0] = [p[1]]
+
+def p_from_list2(p):
+    '''from_list : from_object join_part'''
     join_part = p[2]
     if join_part['more_join']:
         more_join = join_part['more_join']
@@ -152,11 +131,17 @@ def p_from_part2(p):
         join_part = [join_part] + more_join
     else:
         join_part = [join_part]
-    p[0] = {
+    p[0] = [{
         'value': p[1],
         'joins': join_part,
         'type': 'from_object',
-    }
+    }]
+
+def p_from_list3(p):
+    '''from_list : from_list COMMA from_list'''
+    p[0] = p[1] + p[3]
+
+
 
 def p_join_part(p):
     '''join_part : join from_object
@@ -230,7 +215,13 @@ def p_from_object2(p):
         res['alias'] = p[3]
         p[0] = res
 
-
+def p_where(p):
+    '''where : WHERE where_list
+             | empty'''
+    if len(p) == 3:
+        p[0] = p[2]
+    else:
+        p[0] = None
 
 #на порядок and/or правил - забиваем (временно?)
 def p_where_list(p):

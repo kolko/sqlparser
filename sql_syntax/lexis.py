@@ -25,6 +25,7 @@ reserved = {
     'distinct': 'DISTINCT',
     'not': 'NOT',
     'null': 'NULL',
+    'all': 'ALL',
 }
 
 t_COMPARE_TYPE = r'<>|\!=|==|>=|<=|=>|=<|=|>|<'

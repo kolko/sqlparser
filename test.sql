@@ -69,3 +69,7 @@ SELECT  A.*, AA.LIMIT, AA.UNLIMITED FROM ABONENTS A LEFT JOIN ADMIN_ACCOUNTS AA 
 --valid! (check on SQLite)
 select not null from actor;
 select * from users where name is not null;
+select null;
+select CURRENT_TIMESTAMP;
+select * from address, users;
+select * from address join home as h, users u;
