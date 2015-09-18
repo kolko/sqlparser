@@ -73,3 +73,6 @@ select null;
 select CURRENT_TIMESTAMP;
 select * from address, users;
 select * from address join home as h, users u;
+select (select name from abonents where id=fin.abonent_id), balance from finance_operations fin where fin.op_id in (select id from operations);
+select * from (select id from abonents) as aba;
+select aba.* from (select id from abonents) aba;

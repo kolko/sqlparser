@@ -11,8 +11,9 @@ with open('test.sql', 'r') as f:
 res = parser.parse(data)#, debug=True)
 if res:
     for query in res:
-        print(json.dumps(query))
-# exit(0)
+        print(query)
+        # print(json.dumps(query))
+exit(0)
 def cb5_brenchmark():
     with open('cb5_test_select.sql', 'r') as f:
         data = f.readlines()

@@ -26,7 +26,7 @@ def p_select_query(p):
     '''select_query : SELECT distinct fields_part from where'''
     select = Select()
     select.set_distinct(p[2])
-    select.set_fields_part(p[3])
+    select.set_field_part(p[3])
     select.set_from_part(p[4])
     select.set_where_part(p[5])
     p[0] = select
@@ -35,7 +35,7 @@ def p_select_query2(p): #TODO: distinct
     '''select_query : SELECT FIRST NUMBER fields_part from where
                     | SELECT LAST NUMBER fields_part from where'''
     select = Select()
-    select.set_fields_part(p[4])
+    select.set_field_part(p[4])
     select.set_from_part(p[5])
     select.set_where_part(p[6])
 
@@ -48,7 +48,7 @@ def p_select_query3(p):
                     | SELECT distinct fields_part from where LIMIT NUMBER OFFSET NUMBER'''
     select = Select()
     select.set_distinct(p[2])
-    select.set_fields_part(p[3])
+    select.set_field_part(p[3])
     select.set_from_part(p[4])
     select.set_where_part(p[5])
 
@@ -81,32 +81,35 @@ def p_field_record(p):
                     | where_and_field_item AS NAME
                     | "*"
                     | NAME "." "*"
-                    | where_object
     '''
+    #   | where_object
     # where_object тут до первого рефакторинга
-    res = {
-        'type': 'FIELD',
-    }
+    field = Field()
+
+    if len(p) == 2 and isinstance(p[1], Field):
+        p[0] = p[1]
+        return
+
+    if len(p) == 4 and isinstance(p[2], Field):
+        p[3].set_alias(p[1])
+        p[0] = p[3]
+        return
+
     if len(p) == 4 and p[2] == 'as':
-        res = p[1]
-        res['type'] = 'FIELD'
-        assert 'as' not in res
-        res['as'] = p[3]
-        p[0] = res
+        field.set_value(p[1])
+        field.set_alias(p[3])
+        p[0] = field
         return
-    if len(p) == 2 and 'type' in p[1] and p[1]['type'] == 'WHERE_AND_FIELD_ITEM':
-        res = p[1]
-        res['type'] = 'FIELD'
-        p[0] = res
-        return
+
     if len(p) == 2:
-        res['value'] = p[1]
-        p[0] = res
+        field.set_value(p[1])
+        p[0] = field
         return
+
     if len(p) == 4 and p[2] == ".":
-        res['from_alias'] = p[1]
-        res['value'] = p[3]
-        p[0] = res
+        field.set_value( p[3])
+        field.set_table_name(p[1])
+        p[0] = field
         return
 
 def p_from(p):
@@ -194,25 +197,22 @@ def p_join(p):
 
 def p_from_object(p):
     '''from_object : NAME'''
-    p[0] = {
-        'type': 'from_object',
-        'value': p[1],
-    }
+    table = Table(p[1])
+    p[0] = table
 
 def p_from_object2(p):
     '''from_object : NAME NAME
                    | NAME AS NAME'''
-    res = {
-        'type': 'from_object',
-    }
-    if len(p) == 3:
-        res['value'] = p[1]
-        res['alias'] = p[2]
-        p[0] = res
-    else:
-        res['value'] = p[1]
-        res['alias'] = p[3]
-        p[0] = res
+    table = Table(p[1])
+    table.set_alias(p[-1])
+    p[0] = table
+
+def p_from_object3(p):
+    '''from_object : "(" select_query ")" AS NAME
+                   | "(" select_query ")" NAME '''
+    table = VirtualTable(p[2])
+    table.set_alias(p[-1])
+    p[0] = table
 
 def p_where(p):
     '''where : WHERE where_list
@@ -308,22 +308,26 @@ def p_where_and_field_item(p):
                             | LIMIT "." NAME
                             | LIMIT "." LIMIT'''
     # dirty bugfix of LIMIT field - TODO: delete limit from lexer?
-    res = {
-        'type': 'WHERE_AND_FIELD_ITEM',
-    }
+    field = Field()
+    # res = {
+    #     'type': 'WHERE_AND_FIELD_ITEM',
+    # }
     if len(p) == 2:
-        res['value'] = p[1]
-        p[0] = res
+        field.set_value(p[1])
+        p[0] = field
         return
+
     if len(p) == 4 and isinstance(p[2], Select):
-        res['value'] = p[2]
-        p[0] = res
+        field.set_value(p[2])
+        p[0] = field
         return
+
     if len(p) == 4 and p[2] == '.':
-        res['value'] = p[3]
-        res['from_alias'] = p[1]
-        p[0] = res
+        field.set_value(p[3])
+        field.set_alias(p[1])
+        p[0] = field
         return
+
     raise Exception('FAIL')
 
 def p_where_and_field_item2_functions(p):
