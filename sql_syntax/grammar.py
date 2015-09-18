@@ -1,4 +1,5 @@
 from . import lexis
+from .ast_types import *
 
 tokens = lexis.tokens
 
@@ -23,49 +24,47 @@ def p_empty(p):
 
 def p_select_query(p):
     '''select_query : SELECT distinct fields_part from where'''
-    p[0] = {
-        'type': 'SELECT',
-        'distinct': p[2],
-        'fields': p[3],
-        'from': p[4],
-        'where': p[5],
-    }
+    select = Select()
+    select.set_distinct(p[2])
+    select.set_fields_part(p[3])
+    select.set_from_part(p[4])
+    select.set_where_part(p[5])
+    p[0] = select
 
 def p_select_query2(p): #TODO: distinct
     '''select_query : SELECT FIRST NUMBER fields_part from where
                     | SELECT LAST NUMBER fields_part from where'''
-    p[0] = {
-        'type': 'SELECT',
-        'limit_type': p[2].lower(),
-        'limit': p[3],
-        'fields': p[4],
-        'from': p[5],
-        'where': p[6],
-    }
+    select = Select()
+    select.set_fields_part(p[4])
+    select.set_from_part(p[5])
+    select.set_where_part(p[6])
+
+    limit = Limit(p[3], type=p[2])
+    select.set_limit(limit)
+    p[0] = select
 
 def p_select_query3(p):
     '''select_query : SELECT distinct fields_part from where LIMIT NUMBER
                     | SELECT distinct fields_part from where LIMIT NUMBER OFFSET NUMBER'''
-    p[0] = {
-        'type': 'SELECT',
-        'distinct': p[2],
-        'fields': p[3],
-        'from': p[4],
-        'where': p[5],
-        'limit': p[7],
-    }
+    select = Select()
+    select.set_distinct(p[2])
+    select.set_fields_part(p[3])
+    select.set_from_part(p[4])
+    select.set_where_part(p[5])
+
+    limit = Limit(p[7])
     if len(p) == 10:
-        p[0]['offset'] = p[9]
+        limit.set_offset(p[9])
+    select.set_limit(limit)
+
+    p[0] = select
 
 def p_distinct(p):
     '''distinct : DISTINCT
                 | ALL
                 | empty'''
     if p[1]:
-        p[0] = {
-            'type': 'distinct',
-            'value': p[1],
-        }
+        p[0] = p[1]
     else:
         p[0] = None
 
@@ -316,7 +315,7 @@ def p_where_and_field_item(p):
         res['value'] = p[1]
         p[0] = res
         return
-    if len(p) == 4 and 'type' in p[2] and p[2]['type'] == 'SELECT':
+    if len(p) == 4 and isinstance(p[2], Select):
         res['value'] = p[2]
         p[0] = res
         return
