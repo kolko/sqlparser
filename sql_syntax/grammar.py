@@ -204,14 +204,20 @@ def p_from_object2(p):
     '''from_object : NAME NAME
                    | NAME AS NAME'''
     table = Table(p[1])
-    table.set_alias(p[-1])
+    if len(p) == 3:
+        table.set_alias(p[2])
+    else:
+        table.set_alias(p[3])
     p[0] = table
 
 def p_from_object3(p):
     '''from_object : "(" select_query ")" AS NAME
                    | "(" select_query ")" NAME '''
     table = VirtualTable(p[2])
-    table.set_alias(p[-1])
+    if len(p) == 6:
+        table.set_alias(p[5])
+    else:
+        table.set_alias(p[4])
     p[0] = table
 
 def p_where(p):

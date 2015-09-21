@@ -2,10 +2,11 @@ class _ContainerWithSetter(type):
     def __new__(cls, name, bases, attrs):
         fields = attrs.get('FIELDS', [])
         for field_name, field_type in fields:
-            fun = _ContainerWithSetter._create_setter(field_name, field_type)
+            fun = __class__._create_setter(field_name, field_type)
             attrs['set_{}'.format(field_name)] = fun
             attrs[field_name] = None
-        return super(_ContainerWithSetter, cls).__new__(cls, name, bases, attrs)
+        attrs['__str__'] = __class__._create_str()
+        return super(__class__, cls).__new__(cls, name, bases, attrs)
 
     @staticmethod
     def _create_setter(field_name, field_type):
@@ -22,12 +23,40 @@ class _ContainerWithSetter(type):
             setattr(self, field_name, _field)
         return fun
 
+    @staticmethod
+    def _create_str():
+        def fun(self):
+            res = '{}:\n'.format(self.__class__.__name__)
+
+            for field_name, field_type in self.FIELDS:
+                val = getattr(self, field_name, None)
+                if not val:
+                    continue
+
+                res += '    {}:\n'.format(field_name.capitalize())
+                if isinstance(val, list):
+                    res += ''.join(inc_tab(field, 2) for field in val)
+                elif isinstance(val, SqlObject):
+                    res += inc_tab(val, 2)
+                else:
+                    res += (inc_tab(val, 2) + '\n')
+            return res
+        return fun
+
 def inc_tab(s, count=1):
     tabs = '    '*count
-    return '\n'.join('{}{}'.format(tabs, line) for line in str(s).splitlines())
+    res = ''.join('{}{}'.format(tabs, line) for line in str(s).splitlines(True))
+    return res
 
-class Limit(metaclass=_ContainerWithSetter):
+
+class SqlObject(metaclass=_ContainerWithSetter):
+    pass
+
+
+class Limit(SqlObject):
     FIELDS = [
+        ('val', None),
+        ('type', None),
         ('offset', None),
     ]
 
@@ -35,18 +64,8 @@ class Limit(metaclass=_ContainerWithSetter):
         self.val = val
         self.type = type.lower()
 
-    def __str__(self):
-        return u'''Limit:
-    val:
-        {0.val}
-    type:
-        {0.type}
-    offset:
-        {0.offset}
-        '''.format(self)
 
-
-class Field(metaclass=_ContainerWithSetter):
+class Field(SqlObject):
 # expression
     FIELDS = [
         ('value', None),
@@ -54,19 +73,10 @@ class Field(metaclass=_ContainerWithSetter):
         ('alias', None),
     ]
 
-    def __str__(self):
-        value = '    Value:\n{}'.format(inc_tab(self.value, 2))
-        return u'''Field:
-{1}
-    table_name:
-        {0.table_name}
-    alias:
-        {0.alias}
-        '''.format(self, value)
 
-
-class Table(metaclass=_ContainerWithSetter):
+class Table(SqlObject):
     FIELDS = [
+        ('name', None),
         ('alias', None),
     ]
 
@@ -74,8 +84,10 @@ class Table(metaclass=_ContainerWithSetter):
         assert isinstance(name, str)
         self.name = name
 
-class VirtualTable(metaclass=_ContainerWithSetter):
+
+class VirtualTable(SqlObject):
     FIELDS = [
+        ('select', None),
         ('alias', None),
     ]
 
@@ -83,7 +95,8 @@ class VirtualTable(metaclass=_ContainerWithSetter):
         assert isinstance(select, Select)
         self.select = select
 
-class Select(metaclass=_ContainerWithSetter):
+
+class Select(SqlObject):
     FIELDS = [
         ('field_part', [Field]),
         ('from_part', None),
@@ -91,26 +104,3 @@ class Select(metaclass=_ContainerWithSetter):
         ('distinct', str),
         ('limit', Limit),
     ]
-
-    def __str__(self):
-        res = 'SELECT:\n'
-
-        res += '    Field part:\n'
-        res += ''.join('{}\n'.format(inc_tab(field, 2)) for field in self.field_part)
-
-        res += '    From part:\n'
-        res += inc_tab(self.from_part, 2)
-
-        if self.where_part:
-            res += '    Where part:\n'
-            res += inc_tab(self.where_part, 2)
-
-        if self.distinct:
-            res += '     distinct:\n'
-            res += inc_tab(self.distinct, 2)
-
-        if self.limit:
-            res += '     limit:\n'
-            res += inc_tab(self.limit, 2)
-
-        return res
